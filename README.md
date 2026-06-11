@@ -20,6 +20,6 @@ python train.py --task=bdx-velocity-v0 --headless
 ```
 
 ```bash
-python play.py --task=bdx-velocity-play-v0 --num_envs 100
+python play.py --task=bdx-velocity-play-v0 --num_envs 100 --video --video_length 1000
 
 ```
