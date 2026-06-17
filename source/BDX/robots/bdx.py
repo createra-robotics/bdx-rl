@@ -40,18 +40,18 @@ BDX_CFG = ArticulationCfg(
         "legs": DelayedPDActuatorCfg(
             joint_names_expr=[".*_Hip_Yaw", ".*_Hip_Roll", ".*_Hip_Pitch", ".*_Knee", ".*_Ankle"],
             stiffness={
-                ".*_Hip_Yaw": 78.957,
-                ".*_Hip_Roll": 78.957,
-                ".*_Hip_Pitch": 78.957,
-                ".*_Knee": 78.957,
-                ".*_Ankle": 16.581,
+                ".*_Hip_Yaw": 80.0,
+                ".*_Hip_Roll": 80.0,
+                ".*_Hip_Pitch": 80.0,
+                ".*_Knee": 80.0,
+                ".*_Ankle": 40.0,
             },
             damping={
-                ".*_Hip_Yaw": 5.027,
-                ".*_Hip_Roll": 5.027,
-                ".*_Hip_Pitch": 5.027,
-                ".*_Knee": 5.027,
-                ".*_Ankle": 1.056,
+                ".*_Hip_Yaw": 10.0,
+                ".*_Hip_Roll": 10.0,
+                ".*_Hip_Pitch": 10.0,
+                ".*_Knee": 10.0,
+                ".*_Ankle": 2.0,
             },
             armature={
                 ".*_Hip_Yaw": 0.02,

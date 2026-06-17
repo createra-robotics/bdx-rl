@@ -13,7 +13,7 @@ import BDX.tasks.bdx_locomotion.mdp.symmetry as bdx_symmetry  # noqa: I202
 @configclass
 class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
-    max_iterations = 1800
+    max_iterations = 1500
     save_interval = 50
     experiment_name = "bdxr_rough"
     empirical_normalization = False
@@ -23,7 +23,7 @@ class PPORunnerCfg(RslRlOnPolicyRunnerCfg):
         obs_normalization=False,
         distribution_cfg=RslRlMLPModelCfg.GaussianDistributionCfg(
             init_std=1.0,
-            std_type="scalar",
+            std_type="log",
         ),
     )
     critic = RslRlMLPModelCfg(

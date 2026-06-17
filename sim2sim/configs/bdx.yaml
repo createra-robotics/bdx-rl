@@ -1,0 +1,53 @@
+paths:
+  xml: xmls/scene.xml
+  onnx: onnx/model_2850.onnx
+
+robot:
+  joint_names:
+    - Left_Hip_Yaw
+    - Right_Hip_Yaw
+    - Left_Hip_Roll
+    - Right_Hip_Roll
+    - Left_Hip_Pitch
+    - Right_Hip_Pitch
+    - Left_Knee
+    - Right_Knee
+    - Left_Ankle
+    - Right_Ankle
+  default_joint_pos: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+simulation:
+  sim_dt: 0.005
+  policy_rate: 50.0
+  base_height: 0.33
+  duration: 0.0
+  fall_height: 0.18
+  reset_on_fall: false
+  real_time: true
+  viewer: true
+  print_every: 1.0
+
+command: [0.3, 0.0, 0.0]
+
+control:
+  action_scale: 0.5
+  action_clip: 100.0
+
+actuators:
+  kp_default: 80.0
+  kd_default: 10.0
+  kp_ankle: 40.0
+  kd_ankle: 2.0
+  effort_limit_default: 42.0
+  effort_limit_ankle: 11.9
+  armature_default: 0.02
+  armature_ankle: 0.0042
+
+contact:
+  # Isaac training randomizes foot static/dynamic friction in [0.1, 1.1]
+  # against a terrain material of 1.0. MuJoCo uses one sliding friction
+  # coefficient here, so use the midpoint as the nominal sim2sim value.
+  foot_friction: 0.6
+  floor_friction: 0.6
+  torsional_friction: 0.005
+  rolling_friction: 0.0001

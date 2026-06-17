@@ -297,6 +297,29 @@ class EventCfg:
         interval_range_s=(10.0, 15.0),
         params={"velocity_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}},
     )
+    randomize_gains = EventTerm(
+        func=mdp.randomize_actuator_gains,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+            "stiffness_distribution_params": (0.8, 1.2),
+            "damping_distribution_params": (0.8, 1.2),
+            "operation": "scale",
+            "distribution": "uniform",
+        },
+    )
+    randomize_com = EventTerm(
+        func=mdp.randomize_rigid_body_com,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=["base_link"]),
+            "com_range": {
+                "x": (-0.05, 0.05),
+                "y": (-0.05, 0.05),
+                "z": (-0.02, 0.02),
+            },
+        },
+    )
 @configclass
 class TerminationsCfg:
     """Termination terms for the MDP."""
@@ -336,15 +359,15 @@ class BdxrEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.actions.joint_pos.scale = 0.5
 
         # events
-        self.events.push_robot.params["velocity_range"] = {"x": (0.0, 0.0), "y": (0.0, 0.0)}
+        self.events.push_robot.params["velocity_range"] = {"x": (-0.5, 0.5), "y": (-0.5, 0.5)}
         #self.events.push_robot = None
         self.rewards.feet_air_time = None 
         self.events.add_base_mass.params["asset_cfg"].body_names = ["base_link"]
         self.events.add_base_mass.params["mass_distribution_params"] = (-0.5, 0.5)
         self.events.reset_robot_joints.params["position_range"] = (0.8, 1.2)
         self.events.base_external_force_torque.params["asset_cfg"].body_names = ["base_link"]
-        self.events.physics_material.params["static_friction_range"] = (0.1, 2)
-        self.events.physics_material.params["dynamic_friction_range"] = (0.1, 2)
+        self.events.physics_material.params["static_friction_range"] = (0.1, 1.1)
+        self.events.physics_material.params["dynamic_friction_range"] = (0.1, 1.1)
         self.events.physics_material.params["asset_cfg"].body_names = ".*_Foot"
         self.scene.terrain = TerrainImporterCfg(
             prim_path="/World/ground",
@@ -409,7 +432,7 @@ class BdxrEnvCfg(LocomotionVelocityRoughEnvCfg):
         self.rewards.track_ang_vel_z_exp.weight = 5.0
         self.rewards.action_rate_l2.weight =-0.05     
         self.rewards.dof_acc_l2.weight =-1.25e-7      
-        self.rewards.flat_orientation_l2.weight = -2
+        self.rewards.flat_orientation_l2.weight = -4.0
 
         # Walk
         self.commands.base_velocity.ranges.lin_vel_x = (-0.4,0.7)
@@ -437,7 +460,7 @@ class BdxrEnvCfg_PLAY(BdxrEnvCfg):
 
         # disable randomization for play
         self.observations.policy.enable_corruption = False
-        self.commands.base_velocity.ranges.lin_vel_x = (0.1, 0.7)
-        self.commands.base_velocity.ranges.lin_vel_y = (0.00, 0.0)
-        self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)
+        self.commands.base_velocity.ranges.lin_vel_x = (-0.4,0.7)
+        self.commands.base_velocity.ranges.lin_vel_y = (-0.4, 0.4)
+        self.commands.base_velocity.ranges.ang_vel_z = (-1, 1)
         # remove random pushing event

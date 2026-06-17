@@ -71,8 +71,8 @@ def _transform_policy_obs_left_right(obs: torch.Tensor) -> torch.Tensor:
     obs = obs.clone()
     device = obs.device
 
-    # imu_ang_vel (indices 0:3): flip y and z
-    obs[:, 0:3] = obs[:, 0:3] * torch.tensor([1.0, -1.0, -1.0], device=device)
+    # imu_ang_vel (indices 0:3): angular/axial vector under left-right reflection.
+    obs[:, 0:3] = obs[:, 0:3] * torch.tensor([-1.0, 1.0, -1.0], device=device)
     # imu_projected_gravity (indices 3:6): flip y
     obs[:, 3:6] = obs[:, 3:6] * torch.tensor([1.0, -1.0, 1.0], device=device)
     # joint_pos (indices 6:16): swap left-right + flip Hip_Yaw/Hip_Roll
@@ -98,26 +98,26 @@ def _transform_actions_left_right(actions: torch.Tensor) -> torch.Tensor:
 def _switch_bdx_joints_left_right(joint_data: torch.Tensor) -> torch.Tensor:
     """Swap left and right leg joints and flip sign of Hip_Yaw and Hip_Roll.
 
-    BD-X joint ordering (10 DOF):
-        [Left_Hip_Yaw, Left_Hip_Roll, Left_Hip_Pitch, Left_Knee, Left_Ankle,
-         Right_Hip_Yaw, Right_Hip_Roll, Right_Hip_Pitch, Right_Knee, Right_Ankle]
+    BD-X joint ordering from Isaac Lab (10 DOF):
+        [Left_Hip_Yaw, Right_Hip_Yaw, Left_Hip_Roll, Right_Hip_Roll,
+         Left_Hip_Pitch, Right_Hip_Pitch, Left_Knee, Right_Knee, Left_Ankle, Right_Ankle]
 
-    Left indices:  [0, 1, 2, 3, 4]
-    Right indices: [5, 6, 7, 8, 9]
+    Left indices:  [0, 2, 4, 6, 8]
+    Right indices: [1, 3, 5, 7, 9]
 
-    Hip_Yaw (indices 0, 5) and Hip_Roll (indices 1, 6) change sign under mirroring.
+    Hip_Yaw (indices 0, 1) and Hip_Roll (indices 2, 3) change sign under mirroring.
     Hip_Pitch, Knee, and Ankle keep their sign.
     """
     joint_data_switched = torch.zeros_like(joint_data)
 
     # Swap: left <-> right
-    left_idx = [0, 1, 2, 3, 4]
-    right_idx = [5, 6, 7, 8, 9]
+    left_idx = [0, 2, 4, 6, 8]
+    right_idx = [1, 3, 5, 7, 9]
     joint_data_switched[..., left_idx] = joint_data[..., right_idx]
     joint_data_switched[..., right_idx] = joint_data[..., left_idx]
 
     # Flip sign of Hip_Yaw and Hip_Roll (now at their new positions after swap)
-    joint_data_switched[..., [0, 5]] *= -1.0  # Hip_Yaw
-    joint_data_switched[..., [1, 6]] *= -1.0  # Hip_Roll
+    joint_data_switched[..., [0, 1]] *= -1.0  # Hip_Yaw
+    joint_data_switched[..., [2, 3]] *= -1.0  # Hip_Roll
 
     return joint_data_switched
