@@ -75,11 +75,11 @@ def _transform_policy_obs_left_right(obs: torch.Tensor) -> torch.Tensor:
     obs[:, 0:3] = obs[:, 0:3] * torch.tensor([-1.0, 1.0, -1.0], device=device)
     # imu_projected_gravity (indices 3:6): flip y
     obs[:, 3:6] = obs[:, 3:6] * torch.tensor([1.0, -1.0, 1.0], device=device)
-    # joint_pos (indices 6:16): swap left-right + flip Hip_Yaw/Hip_Roll
+    # joint_pos (indices 6:16): swap left-right + flip mirrored joint coordinates
     obs[:, 6:16] = _switch_bdx_joints_left_right(obs[:, 6:16])
-    # joint_vel (indices 16:26): swap left-right + flip Hip_Yaw/Hip_Roll
+    # joint_vel (indices 16:26): swap left-right + flip mirrored joint coordinates
     obs[:, 16:26] = _switch_bdx_joints_left_right(obs[:, 16:26])
-    # last_actions (indices 26:36): swap left-right + flip Hip_Yaw/Hip_Roll
+    # last_actions (indices 26:36): swap left-right + flip mirrored joint coordinates
     obs[:, 26:36] = _switch_bdx_joints_left_right(obs[:, 26:36])
     # velocity_commands (indices 36:39): [lin_vel_x, lin_vel_y, ang_vel_z]
     # flip lin_vel_y, ang_vel_z
@@ -96,7 +96,7 @@ def _transform_actions_left_right(actions: torch.Tensor) -> torch.Tensor:
 
 
 def _switch_bdx_joints_left_right(joint_data: torch.Tensor) -> torch.Tensor:
-    """Swap left and right leg joints and flip sign of Hip_Yaw and Hip_Roll.
+    """Swap left and right leg joints and flip mirrored joint-coordinate signs.
 
     BD-X joint ordering from Isaac Lab (10 DOF):
         [Left_Hip_Yaw, Right_Hip_Yaw, Left_Hip_Roll, Right_Hip_Roll,
@@ -105,8 +105,8 @@ def _switch_bdx_joints_left_right(joint_data: torch.Tensor) -> torch.Tensor:
     Left indices:  [0, 2, 4, 6, 8]
     Right indices: [1, 3, 5, 7, 9]
 
-    Hip_Yaw (indices 0, 1) and Hip_Roll (indices 2, 3) change sign under mirroring.
-    Hip_Pitch, Knee, and Ankle keep their sign.
+    All five joint coordinates change sign under the left-right mirror for the current BD-X URDF
+    conventions. This matches the mirrored joint-limit pairs and FK validation for both BDX and bdx-new.
     """
     joint_data_switched = torch.zeros_like(joint_data)
 
@@ -116,8 +116,7 @@ def _switch_bdx_joints_left_right(joint_data: torch.Tensor) -> torch.Tensor:
     joint_data_switched[..., left_idx] = joint_data[..., right_idx]
     joint_data_switched[..., right_idx] = joint_data[..., left_idx]
 
-    # Flip sign of Hip_Yaw and Hip_Roll (now at their new positions after swap)
-    joint_data_switched[..., [0, 1]] *= -1.0  # Hip_Yaw
-    joint_data_switched[..., [2, 3]] *= -1.0  # Hip_Roll
+    # Flip all mirrored joint coordinates after the left-right swap.
+    joint_data_switched *= -1.0
 
     return joint_data_switched

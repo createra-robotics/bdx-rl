@@ -33,6 +33,17 @@ parser.add_argument(
     action="store_true",
     help="Use the pre-trained checkpoint from Nucleus.",
 )
+parser.add_argument(
+    "--command",
+    type=float,
+    nargs=3,
+    metavar=("LIN_X", "LIN_Y", "ANG_Z"),
+    default=None,
+    help=(
+        "Fixed base velocity command for play: linear-x, linear-y, angular-z. "
+        "If omitted, commands keep using the task's random sampling."
+    ),
+)
 parser.add_argument("--real-time", action="store_true", default=False, help="Run in real-time, if possible.")
 # append RSL-RL cli arguments
 cli_args.add_rsl_rl_args(parser)
@@ -94,6 +105,29 @@ from isaaclab_tasks.utils.hydra import hydra_task_config
 import BDX.tasks  # noqa: F401
 
 
+def _apply_fixed_base_velocity_command(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg) -> None:
+    """Fix the base velocity command to the CLI-provided value when requested."""
+    if args_cli.command is None:
+        return
+
+    if not hasattr(env_cfg, "commands") or env_cfg.commands is None or not hasattr(env_cfg.commands, "base_velocity"):
+        raise ValueError("--command requires a manager-based velocity task with commands.base_velocity configured.")
+
+    lin_vel_x, lin_vel_y, ang_vel_z = args_cli.command
+    base_velocity = env_cfg.commands.base_velocity
+    base_velocity.ranges.lin_vel_x = (lin_vel_x, lin_vel_x)
+    base_velocity.ranges.lin_vel_y = (lin_vel_y, lin_vel_y)
+    base_velocity.ranges.ang_vel_z = (ang_vel_z, ang_vel_z)
+    base_velocity.rel_standing_envs = 0.0
+
+    if hasattr(base_velocity, "heading_command"):
+        base_velocity.heading_command = False
+    if hasattr(base_velocity.ranges, "heading"):
+        base_velocity.ranges.heading = None
+
+    print(f"[INFO] Using fixed base velocity command: [{lin_vel_x}, {lin_vel_y}, {ang_vel_z}]")
+
+
 @hydra_task_config(args_cli.task, args_cli.agent)
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: RslRlBaseRunnerCfg):
     """Play with RSL-RL agent."""
@@ -112,6 +146,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # note: certain randomizations occur in the environment initialization so we set the seed here
     env_cfg.seed = agent_cfg.seed
     env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
+    _apply_fixed_base_velocity_command(env_cfg)
 
     # specify directory for logging experiments
     log_root_path = os.path.join("logs", "rsl_rl", agent_cfg.experiment_name)

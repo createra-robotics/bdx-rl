@@ -1,6 +1,6 @@
 from pathlib import Path
 import isaaclab.sim as sim_utils
-from isaaclab.actuators import ImplicitActuatorCfg, DelayedPDActuatorCfg # noqa: F401
+from isaaclab.actuators import DelayedPDActuatorCfg, ImplicitActuatorCfg  # noqa: F401
 from isaaclab.assets.articulation import ArticulationCfg
 
 ##
@@ -9,6 +9,95 @@ from isaaclab.assets.articulation import ArticulationCfg
 
 # Dynamically get the directory where this bdx.py script is located
 BDX_ASSETS_DIR = Path(__file__).resolve().parent
+
+BDX_LEG_JOINT_NAMES = [".*_Hip_Yaw", ".*_Hip_Roll", ".*_Hip_Pitch", ".*_Knee", ".*_Ankle"]
+
+# PD gains for the original BDX robot.
+BDX_LEG_KP = {
+    ".*_Hip_Yaw": 80.0,
+    ".*_Hip_Roll": 80.0,
+    ".*_Hip_Pitch": 80.0,
+    ".*_Knee": 80.0,
+    ".*_Ankle": 40.0,
+}
+BDX_LEG_KD = {
+    ".*_Hip_Yaw": 10.0,
+    ".*_Hip_Roll": 10.0,
+    ".*_Hip_Pitch": 10.0,
+    ".*_Knee": 10.0,
+    ".*_Ankle": 2.0,
+}
+
+# PD gains for bdx-new. Keep these separate so they can be tuned without touching the original BDX config.
+BDX_NEW_LEG_KP = {
+    ".*_Hip_Yaw": 40.0,
+    ".*_Hip_Roll": 80.0,
+    ".*_Hip_Pitch": 80.0,
+    ".*_Knee": 80.0,
+    ".*_Ankle": 40.0,
+}
+BDX_NEW_LEG_KD = {
+    ".*_Hip_Yaw": 2.0,
+    ".*_Hip_Roll": 10.0,
+    ".*_Hip_Pitch": 10.0,
+    ".*_Knee": 10.0,
+    ".*_Ankle": 2.0,
+}
+
+BDX_LEG_ARMATURE = {
+    ".*_Hip_Yaw": 0.02,
+    ".*_Hip_Roll": 0.02,
+    ".*_Hip_Pitch": 0.02,
+    ".*_Knee": 0.02,
+    ".*_Ankle": 0.0042,
+}
+BDX_LEG_EFFORT_LIMIT_SIM = {
+    ".*_Hip_Yaw": 42.0,
+    ".*_Hip_Roll": 42.0,
+    ".*_Hip_Pitch": 42.0,
+    ".*_Knee": 42.0,
+    ".*_Ankle": 11.9,
+}
+BDX_LEG_VELOCITY_LIMIT_SIM = {
+    ".*_Hip_Yaw": 18.849,
+    ".*_Hip_Roll": 18.849,
+    ".*_Hip_Pitch": 18.849,
+    ".*_Knee": 18.849,
+    ".*_Ankle": 37.699,
+}
+BDX_NEW_LEG_EFFORT_LIMIT_SIM = {
+    ".*_Hip_Yaw": 35.0,
+    ".*_Hip_Roll": 60.0,
+    ".*_Hip_Pitch": 60.0,
+    ".*_Knee": 60.0,
+    ".*_Ankle": 14.0,
+}
+BDX_NEW_LEG_VELOCITY_LIMIT_SIM = {
+    ".*_Hip_Yaw": 20.0,
+    ".*_Hip_Roll": 10.0,
+    ".*_Hip_Pitch": 10.0,
+    ".*_Knee": 10.0,
+    ".*_Ankle": 30.0,
+}
+
+
+def _make_leg_actuator_cfg(
+    kp: dict[str, float],
+    kd: dict[str, float],
+    effort_limit_sim: dict[str, float],
+    velocity_limit_sim: dict[str, float],
+) -> DelayedPDActuatorCfg:
+    return DelayedPDActuatorCfg(
+        joint_names_expr=list(BDX_LEG_JOINT_NAMES),
+        stiffness=dict(kp),
+        damping=dict(kd),
+        armature=dict(BDX_LEG_ARMATURE),
+        effort_limit_sim=dict(effort_limit_sim),
+        velocity_limit_sim=dict(velocity_limit_sim),
+        min_delay=0,
+        max_delay=0,
+    )
+
 
 BDX_CFG = ArticulationCfg(
     spawn=sim_utils.UrdfFileCfg(
@@ -37,47 +126,47 @@ BDX_CFG = ArticulationCfg(
         pos=(0.0, 0.0, 0.33),
     ),
     actuators={
-        "legs": DelayedPDActuatorCfg(
-            joint_names_expr=[".*_Hip_Yaw", ".*_Hip_Roll", ".*_Hip_Pitch", ".*_Knee", ".*_Ankle"],
-            stiffness={
-                ".*_Hip_Yaw": 80.0,
-                ".*_Hip_Roll": 80.0,
-                ".*_Hip_Pitch": 80.0,
-                ".*_Knee": 80.0,
-                ".*_Ankle": 40.0,
-            },
-            damping={
-                ".*_Hip_Yaw": 10.0,
-                ".*_Hip_Roll": 10.0,
-                ".*_Hip_Pitch": 10.0,
-                ".*_Knee": 10.0,
-                ".*_Ankle": 2.0,
-            },
-            armature={
-                ".*_Hip_Yaw": 0.02,
-                ".*_Hip_Roll": 0.02,
-                ".*_Hip_Pitch": 0.02,
-                ".*_Knee": 0.02,
-                ".*_Ankle": 0.0042,
-            },
-            effort_limit_sim={
-                ".*_Hip_Yaw": 42.0,
-                ".*_Hip_Roll": 42.0,
-                ".*_Hip_Pitch": 42.0,
-                ".*_Knee": 42.0,
-                ".*_Ankle": 11.9,
-            },
-            velocity_limit_sim={
-                ".*_Hip_Yaw": 18.849,
-                ".*_Hip_Roll": 18.849,
-                ".*_Hip_Pitch": 18.849,
-                ".*_Knee": 18.849,
-                ".*_Ankle": 37.699,
-            },
-            min_delay=0,
-            max_delay=0
-        ),
+        "legs": _make_leg_actuator_cfg(BDX_LEG_KP, BDX_LEG_KD, BDX_LEG_EFFORT_LIMIT_SIM, BDX_LEG_VELOCITY_LIMIT_SIM),
     },
     soft_joint_pos_limit_factor=0.95,
 )
 """Configuration for the Disney BD-X robot with implicit actuator model."""
+
+
+BDX_NEW_CFG = ArticulationCfg(
+    spawn=sim_utils.UrdfFileCfg(
+        fix_base=False,
+        merge_fixed_joints=True,
+        replace_cylinders_with_capsules=False,
+        asset_path=str(Path(__file__).resolve().parents[1] / "assets/bdx-new/bdx-new.urdf"),
+        activate_contact_sensors=True,
+        rigid_props=sim_utils.RigidBodyPropertiesCfg(
+            disable_gravity=False,
+            retain_accelerations=False,
+            linear_damping=0.0,
+            angular_damping=0.0,
+            max_linear_velocity=1000.0,
+            max_angular_velocity=1000.0,
+            max_depenetration_velocity=1.0,
+        ),
+        articulation_props=sim_utils.ArticulationRootPropertiesCfg(
+            enabled_self_collisions=False, solver_position_iteration_count=4, solver_velocity_iteration_count=0
+        ),
+        joint_drive=sim_utils.UrdfConverterCfg.JointDriveCfg(
+            gains=sim_utils.UrdfConverterCfg.JointDriveCfg.PDGainsCfg(stiffness=0, damping=0)
+        ),
+    ),
+    init_state=ArticulationCfg.InitialStateCfg(
+        pos=(0.0, 0.0, 0.21),
+    ),
+    actuators={
+        "legs": _make_leg_actuator_cfg(
+            BDX_NEW_LEG_KP,
+            BDX_NEW_LEG_KD,
+            BDX_NEW_LEG_EFFORT_LIMIT_SIM,
+            BDX_NEW_LEG_VELOCITY_LIMIT_SIM,
+        ),
+    },
+    soft_joint_pos_limit_factor=0.95,
+)
+"""Configuration for the bdx-new robot with the new URDF asset."""

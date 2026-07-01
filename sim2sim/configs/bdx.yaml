@@ -27,7 +27,7 @@ simulation:
   viewer: true
   print_every: 1.0
 
-command: [0.3, 0.0, 0.0]
+command: [0.0, 0.0, 0.0]
 
 control:
   action_scale: 0.5

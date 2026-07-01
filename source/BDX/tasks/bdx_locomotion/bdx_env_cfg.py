@@ -180,6 +180,17 @@ class BDXRRewards(RewardsCfg):
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_Foot"),
         },
     )
+    contact_pattern = RewTerm(
+        func=mdp.bipedal_contact_pattern_penalty,
+        weight=-1.0,
+        params={
+            "command_name": "base_velocity",
+            "command_threshold": 0.05,
+            "velocity_threshold": 0.5,
+            "asset_cfg": SceneEntityCfg("robot"),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_Foot"),
+        },
+    )
     # penalize ankle joint limits
     dof_pos_limits = RewTerm(
         func=mdp.joint_pos_limits,

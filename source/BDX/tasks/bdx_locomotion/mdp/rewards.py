@@ -69,6 +69,36 @@ def bipedal_air_time_reward(
     return torch.sum(reward, dim=1)
 
 
+def bipedal_contact_pattern_penalty(
+    env: ManagerBasedRLEnv,
+    asset_cfg: SceneEntityCfg,
+    sensor_cfg: SceneEntityCfg,
+    command_name: str,
+    command_threshold: float,
+    velocity_threshold: float,
+) -> torch.Tensor:
+    """Penalize undesired two-foot contact patterns for bipedal walking and standing."""
+    contact_sensor: ContactSensor = env.scene.sensors[sensor_cfg.name]
+    asset: Articulation = env.scene[asset_cfg.name]
+    if not contact_sensor.cfg.track_air_time:
+        raise RuntimeError("Activate ContactSensor's track_air_time!")
+
+    contact_time = contact_sensor.data.current_contact_time[:, sensor_cfg.body_ids]
+    if contact_time.shape[1] != 2:
+        raise RuntimeError(
+            f"Expected exactly two feet for bipedal contact pattern reward, got {contact_time.shape[1]}."
+        )
+
+    command = env.command_manager.get_command(command_name)
+    cmd_norm = torch.linalg.norm(command, dim=1)
+    body_vel = torch.linalg.norm(asset.data.root_lin_vel_b[:, :2], dim=1)
+    is_moving = torch.logical_or(cmd_norm > command_threshold, body_vel > velocity_threshold)
+
+    num_contacts = torch.sum(contact_time > 0.0, dim=1).float()
+    desired_contacts = torch.where(is_moving, torch.ones_like(num_contacts), torch.full_like(num_contacts, 2.0))
+    return torch.square(num_contacts - desired_contacts)
+
+
 def base_angular_velocity_reward(env: ManagerBasedRLEnv, asset_cfg: SceneEntityCfg, std: float) -> torch.Tensor:
     """Reward tracking of angular velocity commands (yaw) using abs exponential kernel."""
     # extract the used quantities (to enable type-hinting)

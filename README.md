@@ -49,6 +49,8 @@ Run the exported ONNX policy in MuJoCo with the BDX XML model:
 cd /home/ubuntu/dev/bdx-rl && python sim2sim/scripts/sim2sim_bdx.py
 ```
 
+For robot-side ROS deployment guidance, see `sim2sim/ROBOT_DEPLOYMENT.md`.
+
 The sim2sim runner loads defaults from `sim2sim/configs/bdx.yaml`. Use this file to tune the MuJoCo XML path, ONNX
 path, velocity command, control gains, action scaling, simulation timestep, and foot/floor friction.
 
